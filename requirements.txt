@@ -1,0 +1,9 @@
+click==8.1.7
+python-dotenv==1.0.0
+requests==2.31.0
+PyYAML==6.0.1
+questionary==2.0.1
+newspaper4k
+lxml_html_clean
+spacy
+tabulate

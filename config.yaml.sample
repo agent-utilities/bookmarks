@@ -1,0 +1,17 @@
+jsonbin:
+  base_url: "https://api.jsonbin.io/v3"
+collections:
+  tech_bookmarks:
+    id: "your_collection_id_here"
+    name: "Technology Bookmarks"
+  research_papers:
+    id: "your_collection_id_here"
+    name: "Research Papers"
+categories:
+  - Technology
+  - Programming
+  - Design
+  - Articles
+  - Tools
+  - Research
+  - Other
