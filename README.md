@@ -1,15 +1,19 @@
-# JSONBin CLI
+# Bookmarks CLI
 
-A command-line interface tool for managing collections and items in JSONBin.io. This CLI provides an easy way to interact with JSONBin.io's API, with a specific implementation for managing bookmarks.
+A command-line interface tool for managing bookmarks using JSONBin.io
+as a backend but with flexibility to add oher backends. This CLI
+provides an easy way to save and organize bookmarks while
+automatically extracting metadata from various web sources.
 
 ## Features
 
-- Manage JSONBin.io collections and bins
-- View items within predefined collections
-- Add new items interactively
+- Store and organize bookmarks in JSONBin.io collections
+- View bookmarks within predefined collections
+- Add new bookmarks with automatic metadata extraction from URLs
+- Smart source handling for different types of URLs (YouTube, Reddit, etc.)
+- Interactive CLI with rich formatting and user prompts
 - Configuration-driven collection management
 - Secure API key management using environment variables
-- Extensible architecture for different item types (currently implements bookmarks)
 
 ## Installation
 
@@ -24,101 +28,21 @@ cd bookmarks
 pip install -r requirements.txt
 ```
 
-3. Install datasets
-```
-python3 -m spacy download en_core_web_sm
-python3 -c "import nltk; nltk.download('punkt_tab')"
-```
-
-4. Create a `.env` file in the project root and add your JSONBin.io API key:
+3. Create a `.env` file in the project root and add your JSONBin.io keys:
 ```bash
 JSONBIN_API_KEY=your_api_key_here
 JSONBIN_ACCESS_KEY=your_access_key_here
 ```
 
-5. Configure your collections in `config.yaml`:
+4. Configure your collections in `config.yaml`:
 ```yaml
 jsonbin:
-  base_url: "https://api.jsonbin.io/v3"
-collections:
-  tech_bookmarks:
-    id: "your_collection_id_here"
-    name: "Bookmarks"
-  research_papers:
-    id: "your_collection_id_here"
-    name: "Papers"
-categories:
-  - Technology
-  - Programming
-  - Design
-  - Articles
-  - Tools
-  - Research
-  - Other
-```
-
-The `config.yaml` file is required and must contain:
-- JSONBin.io API configuration
-- Collection definitions (name and ID mappings)
-- List of available categories for items
-
-## Usage
-
-### List Items in a Collection
-
-View all items in a specific collection:
-
-```bash
-python bookmarks.py items tech_bookmarks
-```
-
-Example output:
-```
-URL: https://example.com
-Text: Example Website
-Category: Technology
-Note: Interesting resource for future reference
----
-```
-
-### Add New Item
-
-Add a new item interactively:
-
-```bash
-python bookmarks.py add tech_bookmarks
-```
-
-The CLI will prompt you for:
-- URL
-- Description
-- Note (optional)
-- Category (select from predefined list)
-
-## Project Structure
-
-```
-jsonbin-cli/
-├── bookmarks.py        # Bookmark-specific CLI implementation
-├── libjsonbin.py       # Core JSONBin.io interaction library
-├── config.yaml         # Configuration file (required)
-├── requirements.txt    # Python dependencies
-├── .env               # Environment variables (not in repo)
-└── README.md          # This file
-```
-
-## Configuration
-
-The `config.yaml` file is required and contains all necessary configuration:
-
-```yaml
-jsonbin:
-  api_key: ${JSONBIN_API_KEY}
   base_url: "https://api.jsonbin.io/v3"
 collections:
   collection_name:
     id: "your_collection_id_here"
     name: "Display Name"
+    backend: "jsonbin"  # Optional, defaults to jsonbin
 categories:
   - Technology
   - Programming
@@ -129,68 +53,135 @@ categories:
   - Other
 ```
 
-### Configuration Sections
+## Usage
 
-1. `jsonbin`: API configuration
-   - `api_key`: Referenced from environment variables
-   - `base_url`: JSONBin.io API endpoint
+### List Bookmarks
 
-2. `collections`: Mapping of collection names to their JSONBin.io IDs
-   - Each collection needs a unique name (used in CLI commands)
-   - Each collection needs its JSONBin.io ID
-   - Optional display name for each collection
+View all bookmarks in a collection:
 
-3. `categories`: List of predefined categories for bookmarks
+```bash
+python bookmarks.py list collection_name [--ascending] [--all]
+```
 
-## Development
+Options:
+- `--ascending`: Sort in ascending order
+- `--all`: Fetch all objects (not just first 10)
 
-### Project Components
+### Show Bookmark Details
 
-1. `libjsonbin.py`:
-   - Core library for JSONBin.io API interactions
-   - Handles collection management and configuration
-   - Processes API responses and errors
+View detailed information about a specific bookmark:
 
-2. `bookmarks.py`:
-   - Example implementation for bookmark management
-   - Implements CLI commands using Click
-   - Handles user interaction and input
-   - Formats and displays output
+```bash
+python bookmarks.py show collection_name object_id
+```
 
-### Creating New Implementations
+This will display rich information including:
+- Basic bookmark information
+- Description and notes
+- Source-specific metadata (YouTube, Reddit, etc.)
+- System metadata (creation date, visibility, etc.)
 
-The project is designed to be extensible. To create a new implementation:
+### Add New Bookmark
 
-1. Use `libjsonbin.py` as your core library
-2. Create a new CLI file similar to `bookmarks.py`
-3. Update configuration in `config.yaml` as needed
+Add a new bookmark interactively:
 
-### Error Handling
+```bash
+python bookmarks.py add collection_name
+```
 
-The CLI includes error handling for:
-- Missing or invalid configuration
-- Invalid collection names
-- Missing or invalid API keys
-- Failed operations (add/list)
+The CLI will:
+1. Prompt for the URL
+2. Automatically extract metadata based on the URL type
+3. Allow you to review and customize the extracted information
+4. Prompt for additional details like notes and category
+5. Save the bookmark to JSONBin.io
+
+### Delete Bookmark
+
+Delete a specific bookmark:
+
+```bash
+python bookmarks.py delete collection_name object_id
+```
+
+## Project Structure
+
+```
+bookmarks/
+├── bookmarks.py        # Main CLI implementation
+├── sources.py          # URL source handlers
+├── storage.py          # Storage backend implementations
+├── config.yaml         # Configuration file
+├── requirements.txt    # Python dependencies
+├── .env               # Environment variables
+└── README.md          # Documentation
+```
+
+### Key Components
+
+1. `bookmarks.py`: Main CLI application
+   - Implements commands (list, show, add, delete)
+   - Handles user interaction using questionary
+   - Formats output with rich formatting
+
+2. `sources.py`: URL metadata extraction
+   - Base Source class with factory method
+   - Specialized handlers for different URL types:
+     - YouTube (title, author, thumbnail)
+     - Reddit (subreddit, score, author)
+     - Twitter/X (currently unsupported)
+     - Default (general webpage metadata)
+
+3. `storage.py`: Storage backend interface
+   - Abstract StorageBackend class
+   - JsonBinBackend implementation
+   - StorageManager for handling multiple backends
+
+## Configuration
+
+The `config.yaml` file requires:
+
+```yaml
+jsonbin:
+  base_url: "https://api.jsonbin.io/v3"
+collections:
+  collection_name:
+    id: "your_collection_id_here"
+    name: "Display Name"
+    backend: "jsonbin"  # Optional
+categories:
+  - Category1
+  - Category2
+  # ...
+```
 
 ## Security
 
-- API keys are stored in `.env` file (not in repository)
-- Collection IDs are stored in configuration file
-- HTTPS is used for all API communications
-- API key is passed securely in headers
+- API keys stored in `.env` file (not in repository)
+- Private bins by default
+- HTTPS used for all API communications
+- API and Access keys passed securely in headers
 
 ## Requirements
 
-- Python 3.7+
-- click==8.1.7
-- python-dotenv==1.0.0
-- requests==2.31.0
-- PyYAML==6.0.1
-- questionary==2.0.1
+Required Python packages:
+- click
+- python-dotenv
+- requests
+- PyYAML
+- questionary
+- newspaper3k
+- tabulate
+
+## Error Handling
+
+The CLI includes comprehensive error handling for:
+- Invalid URLs or unsupported sources
+- Missing or invalid configuration
+- API authentication issues
+- Failed operations (add/list/show/delete)
+- Metadata extraction failures
 
 ## License
 
 MIT
-
-
