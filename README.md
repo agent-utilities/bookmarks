@@ -42,7 +42,7 @@ collections:
   collection_name:
     id: "your_collection_id_here"
     name: "Display Name"
-    backend: "jsonbin"  # Optional, defaults to jsonbin
+    backend: "supabase"  # Optional, defaults to supabase
 categories:
   - Technology
   - Programming
